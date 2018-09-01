@@ -7,11 +7,14 @@ class Product(models.Model):
     price = models.PositiveIntegerField(help_text='Price of product in cents if no ProductPrice in date range')
 
     def get_price(self, date):
-        """Return the price in cents for this product on the requested date."""
+        """Return the price in cents for this product for the requested date."""
 
-        active_price_on_date = self.product_price_set.exclude(start_date__gt=date).exclude(end_date__lte=date).all()[0]
+        active_price_on_date = self.productprice_set.exclude(date_start__gt=date).exclude(date_end__lte=date).first()
 
-        return active_price_on_date or self.price
+        try:
+            return active_price_on_date.amount
+        except AttributeError:
+            return self.price
     
     def __str__(self):
         return '{} - {}'.format(self.name, self.code)
