@@ -17,6 +17,9 @@ The Smile Widget Company currently sells two types of smile widgets: a Big Widge
   * `>>> python manage.py migrate`
 6. Load data from fixtures:
   * `>>> python manage.py loaddata 0001_fixtures.json`
+  * `>>> python manage.py loaddata 0002_fixtures.json`
+7. Run tests:
+  * `python manage.py test products`
 
 ### Technical Requirements
 * We currently have two products with the following prices:
