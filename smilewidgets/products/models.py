@@ -6,13 +6,16 @@ class Product(models.Model):
     code = models.CharField(max_length=10, help_text='Internal facing reference to product')
     price = models.PositiveIntegerField(help_text='Price of product in cents if no ProductPrice in date range')
 
-    def get_price(self, date):
+    def get_product_price_schedule(self, date):
+        """Return the ProductPrice covered by the date or None."""
+
+        return self.productprice_set.exclude(date_start__gt=date).exclude(date_end__lte=date).first()
+
+    def get_price_for_date(self, date):
         """Return the price in cents for this product for the requested date."""
 
-        active_price_on_date = self.productprice_set.exclude(date_start__gt=date).exclude(date_end__lte=date).first()
-
         try:
-            return active_price_on_date.amount
+            return self.get_product_price_schedule(date).amount
         except AttributeError:
             return self.price
     
@@ -42,3 +45,24 @@ class GiftCard(BasePriceSchedule):
 
 class ProductPrice(BasePriceSchedule):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+
+    class DateOverlapError(Exception):
+        pass
+
+    def save(self, *args, **kwargs):
+        """Prevent overlapping price schedules for a product in order to simplify price lookup."""
+
+        # First make sure that this price schedule doesn't start inside another:
+        if self.product.get_product_price_schedule(self.date_start) is not None:
+            raise ProductPrice.DateOverlapError('Starts inside ProductPrice for same Product')
+
+        # Then make sure that it doesn't end inside another:
+        if self.date_end and self.product.get_product_price_schedule(self.date_end) is not None:
+            raise ProductPrice.DateOverlapError('Partially overlaps with ProductPrice for same Product')
+
+        # If this new price schedule is indefinite, make sure that there isn't an existing
+        # range that would start inside it:
+        if self.date_end is None and self.product.productprice_set.filter(date_start__gte=self.date_start).first():
+            raise ProductPrice.DateOverlapError('Indefinite ProudctPrice would overlap with existing later range')
+
+        super().save(*args, **kwargs)
