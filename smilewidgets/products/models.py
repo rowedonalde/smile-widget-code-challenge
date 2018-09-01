@@ -66,3 +66,6 @@ class ProductPrice(BasePriceSchedule):
             raise ProductPrice.DateOverlapError('Indefinite ProudctPrice would overlap with existing later range')
 
         super().save(*args, **kwargs)
+
+    def __str__(self):
+        return '{} {} - {}'.format(self.product.code, self.date_start, self.date_end)
