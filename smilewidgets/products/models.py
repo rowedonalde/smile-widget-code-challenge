@@ -39,6 +39,10 @@ class BasePriceSchedule(models.Model):
 class GiftCard(BasePriceSchedule):
     code = models.CharField(max_length=30)
 
+    @staticmethod
+    def gift_card_for_date_range(code, date):
+        return GiftCard.objects.filter(code=code).exclude(date_start__gt=date).exclude(date_end__lte=date).all()
+
     def __str__(self):
         return '{} - {}'.format(self.code, self.formatted_amount)
 
